@@ -4,10 +4,15 @@ import { connectdb } from "@/lib/connectdb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/option";
 
-export async function GET(req: Request, { params }: { params: { queueId: string } }) {
+export async function GET(req: Request, {
+    params,
+}: {
+    params: Promise<{
+        queueId: string;
+    }>;
+}) {
     await connectdb()
-
-    const { queueId } = params
+    const { queueId } = await params
 
     const foundQueue = await queueModel.findById(queueId)
 
@@ -33,8 +38,6 @@ export async function GET(req: Request, { params }: { params: { queueId: string 
             message: "Queue is not of your organization"
         })
     }
-
-    const stats = {}
 
     const tokens = await tokenModel.aggregate([
         {

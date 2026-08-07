@@ -34,9 +34,9 @@ export async function GET(
         typeof queueModel.watch
     > | null = null;
 
-    // let heartbeat:
-    //     | ReturnType<typeof setInterval>
-    //     | null = null;
+    let heartbeat:
+        | ReturnType<typeof setInterval>
+        | null = null;
 
     const encoder = new TextEncoder();
 
@@ -63,31 +63,32 @@ export async function GET(
             changeStream.on(
                 "change",
                 (change) => {
-                    const queue =
-                        change.fullDocument;
+                    if ("fullDocument" in change && change.fullDocument) {
+                        const queue = change.fullDocument;
 
-                    if (!queue) return;
+                        if (!queue) return;
 
-                    controller.enqueue(
-                        encoder.encode(
-                            `data: ${JSON.stringify({
-                                type: "queue-update",
-                                currentToken:
-                                    queue.currentTokenNumber,
-                                status: queue.status,
-                            })}\n\n`
-                        )
-                    );
+                        controller.enqueue(
+                            encoder.encode(
+                                `data: ${JSON.stringify({
+                                    type: "queue-update",
+                                    currentToken:
+                                        queue.currentTokenNumber,
+                                    status: queue.status,
+                                })}\n\n`
+                            )
+                        );
+                    }
                 }
             );
 
-            // heartbeat = setInterval(() => {
-            //     controller.enqueue(
-            //         encoder.encode(
-            //             `: heartbeat\n\n`
-            //         )
-            //     );
-            // }, 15000);
+            heartbeat = setInterval(() => {
+                controller.enqueue(
+                    encoder.encode(
+                        `: heartbeat\n\n`
+                    )
+                );
+            }, 15000);
         },
 
         async cancel() {

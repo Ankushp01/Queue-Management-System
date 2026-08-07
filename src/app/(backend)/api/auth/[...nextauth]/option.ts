@@ -14,23 +14,31 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'text' },
         password: { label: 'Password', type: 'password' }
       },
-      async authorize(credentials): Promise<any> {
-        await connectdb()
+      async authorize(credentials) {
+        await connectdb();
 
-        const org = await organizationModel.findOne({ email: credentials?.email })
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
+        const org = await organizationModel.findOne({
+          email: credentials.email,
+        });
 
         if (!org) {
-          return null
-          throw new Error("No email found")
+          return null;
         }
 
-        const isPasswordCorrect = await bcrypt.compare(credentials?.password, org.password)
+        const isPasswordCorrect = await bcrypt.compare(
+          credentials.password,
+          org.password
+        );
 
         if (!isPasswordCorrect) {
-          return null
-          throw new Error("Incorrect Password so some error occured during authentication using next-auth")
+          return null;
         }
-        return org
+
+        return org;
       }
     })
   ],

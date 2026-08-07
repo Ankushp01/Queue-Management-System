@@ -59,9 +59,12 @@ export async function GET(req: Request, {
     })
 }
 
-export async function DELETE({ params }: { params: { queueId: string } }) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ queueId: string }> }
+) {
     await connectdb()
-    const { queueId } = params
+    const { queueId } = await params;
 
     if (!queueId) {
         return Response.json({

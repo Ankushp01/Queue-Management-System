@@ -3,11 +3,15 @@ import tokenModel from "@/models/token.model";
 import queueModel from "@/models/queue.model";
 import { connectdb } from "@/lib/connectdb";
 
-export async function POST(req: Request, { params }: { params: { queueId: string } }) {
+export async function POST(req: Request, {
+    params,
+}: {
+    params: Promise<{
+        queueId: string;
+    }>;
+}) {
     await connectdb()
-    // const { } = await req.json()
-
-    const { queueId } = params
+    const { queueId } = await params
 
     const foundQueue = await queueModel.findById(queueId)
 
