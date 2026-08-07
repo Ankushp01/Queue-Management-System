@@ -1,36 +1,133 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Queue Management System
 
-## Getting Started
+A modern full-stack queue management system that replaces physical waiting lines with virtual queues. Organizations can create and manage queues, while users can join, monitor their position, and receive real-time updates.
 
-First, run the development server:
+---
+
+## ✨ Features
+
+### Public
+- Browse available queues
+- Join a queue without creating an account
+- Live queue status tracking
+- Estimated waiting time
+- View current token being served
+
+### Admin
+- Create and manage queues
+- Pause and resume queues
+- Call next token
+- Mark tokens as served
+- Monitor queue statistics
+- Dashboard for queue management
+
+### System
+- Secure authentication
+- Real-time updates
+- Responsive UI
+- REST API
+- Role-based access
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+
+### Backend
+- Next.js API Routes
+- MongoDB
+- Mongoose
+- JWT Authentication
+
+### Other Tools
+- Git
+- GitHub
+
+---
+
+## 📂 Project Structure
+
+```
+src/
+├── app/
+├── components/
+├── models/
+├── services/
+├── providers/
+├── lib/
+├── middleware.ts
+└── types/
+```
+
+---
+
+## 🚀 Getting Started
+
+### Clone the repository
+
+```bash
+git clone https://github.com/Ankushp01/Queue-Management-System.git
+```
+
+### Install dependencies
+
+```bash
+npm install
+```
+
+### Create environment variables
+
+Create a `.env.local` file.
+
+```env
+MONGODB_URI=your_mongodb_uri
+JWT_SECRET=your_secret
+```
+
+### Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 📸 Screenshots
 
-To learn more about Next.js, take a look at the following resources:
+Coming Soon
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🗺️ Roadmap
 
-## Deploy on Vercel
+- [ ] Email/SMS notifications
+- [ ] QR code queue joining
+- [ ] Analytics dashboard
+- [ ] Multi-branch support
+- [ ] Appointment scheduling
+- [ ] Queue history
+- [ ] Estimated wait prediction using historical data
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
