@@ -2,7 +2,7 @@ import tokenModel from "@/models/token.model";
 import queueModel from "@/models/queue.model";
 import { connectdb } from "@/lib/connectdb";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/option";
+import { authOptions } from "@/app/(backend)/api/auth/[...nextauth]/option";
 
 export async function PATCH(req: Request, { params }: { params: { tokenId: string } }) {
     await connectdb()

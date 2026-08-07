@@ -2,7 +2,7 @@ import tokenModel from "@/models/token.model";
 import queueModel from "@/models/queue.model";
 import { connectdb } from "@/lib/connectdb";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/option";
+import { authOptions } from "../../../auth/[...nextauth]/option";
 
 export async function GET(req: Request, { params }: { params: { queueId: string } }) {
     await connectdb()

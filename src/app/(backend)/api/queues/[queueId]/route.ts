@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import queueModel from "@/models/queue.model";
-// import { getServerSession } from "next-auth";
-// import { authOptions } from "../../auth/[...nextauth]/option";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../auth/[...nextauth]/option";
 import { connectdb } from "@/lib/connectdb";
 
 export async function GET(req: Request, {
