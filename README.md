@@ -1,133 +1,191 @@
 # Queue Management System
 
-A modern full-stack queue management system that replaces physical waiting lines with virtual queues. Organizations can create and manage queues, while users can join, monitor their position, and receive real-time updates.
+A real-time digital queue management system designed to replace physical waiting lines with a centralized token-based system.
 
----
+The system allows organizations to create and manage multiple service queues while users can obtain and track tokens without creating an account.
 
-## ✨ Features
+## Features
 
-### Public
-- Browse available queues
-- Join a queue without creating an account
-- Live queue status tracking
-- Estimated waiting time
-- View current token being served
+* Organization authentication and management
+* Create and manage multiple service queues
+* Generate tokens for users without requiring login
+* Real-time token and queue status updates
+* Token states: Waiting, Served, Cancelled, and Skipped
+* Queue states: Working, Paused, and Break
+* Automatic token numbering
+* Queue statistics such as average waiting time
+* Real-time updates using Server-Sent Events (SSE)
+* MongoDB Change Streams for detecting database changes
+* Transaction-based operations for critical queue updates
+* Responsive dashboard built with Tailwind CSS
 
-### Admin
-- Create and manage queues
-- Pause and resume queues
-- Call next token
-- Mark tokens as served
-- Monitor queue statistics
-- Dashboard for queue management
-
-### System
-- Secure authentication
-- Real-time updates
-- Responsive UI
-- REST API
-- Role-based access
-
----
-
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
+
+* Next.js
+* React
+* Tailwind CSS
 
 ### Backend
-- Next.js API Routes
-- MongoDB
-- Mongoose
-- JWT Authentication
 
-### Other Tools
-- Git
-- GitHub
+* Node.js
+* Express.js
+* Next.js API routes
 
----
+### Database
 
-## 📂 Project Structure
+* MongoDB
+* Mongoose
+* MongoDB Change Streams
 
-```
-src/
-├── app/
-├── components/
-├── models/
-├── services/
-├── providers/
-├── lib/
-├── middleware.ts
-└── types/
-```
+### Authentication
 
----
+* NextAuth.js
+* Credentials-based authentication
+* JWT sessions
 
-## 🚀 Getting Started
+## System Architecture
 
-### Clone the repository
+The application consists of three major parts:
 
-```bash
-git clone https://github.com/Ankushp01/Queue-Management-System.git
-```
-
-### Install dependencies
-
-```bash
-npm install
-```
-
-### Create environment variables
-
-Create a `.env.local` file.
-
-```env
-MONGODB_URI=your_mongodb_uri
-JWT_SECRET=your_secret
+```text
+User
+ │
+ ├── Generate Token
+ ├── Search Token
+ └── Track Queue Status
+          │
+          ▼
+     Next.js Frontend
+          │
+          ▼
+      Backend APIs
+          │
+          ▼
+       MongoDB
+          │
+          ▼
+   MongoDB Change Streams
+          │
+          ▼
+       SSE Server
+          │
+          ▼
+   Connected Clients
 ```
 
-### Run the development server
+## Queue Flow
 
-```bash
-npm run dev
+```text
+User selects queue
+        ↓
+Token generated
+        ↓
+Token enters WAITING state
+        ↓
+Queue processes tokens
+        ↓
+Token becomes SERVED
 ```
 
-Visit:
+A token can also be cancelled or skipped depending on the queue operation.
 
+## Real-Time Updates
+
+The system uses **MongoDB Change Streams** to detect changes in queue and token documents.
+
+When a relevant database change occurs:
+
+```text
+MongoDB Change
+      ↓
+Change Stream
+      ↓
+SSE Endpoint
+      ↓
+Connected Clients
+      ↓
+UI Updated
 ```
-http://localhost:3000
+
+This avoids repeatedly polling the server for queue changes.
+
+## Data Models
+
+### Organization
+
+Stores organization information and its associated queues.
+
+```text
+Organization
+├── name
+├── description
+├── address
+├── contactNumber
+└── queues
 ```
 
----
+### Queue
 
-## 📸 Screenshots
+Represents an individual service queue.
 
-Coming Soon
+```text
+Queue
+├── name
+├── description
+├── nextTokenNumber
+├── status
+└── avgWaitingTime
+```
 
----
+### Token
 
-## 🗺️ Roadmap
+Represents a user's position in a queue.
 
-- [ ] Email/SMS notifications
-- [ ] QR code queue joining
-- [ ] Analytics dashboard
-- [ ] Multi-branch support
-- [ ] Appointment scheduling
-- [ ] Queue history
-- [ ] Estimated wait prediction using historical data
+```text
+Token
+├── queueId
+├── tokenNumber
+├── phoneNumber
+└── status
+```
 
----
+Possible token states:
 
-## 🤝 Contributing
+```text
+WAITING
+SERVED
+CANCELLED
+SKIPPED
+```
 
-Contributions, issues, and feature requests are welcome.
+## Key Technical Challenges
 
----
+### Concurrent Token Generation
 
-## 📄 License
+Multiple users may request tokens simultaneously. Database operations need to prevent duplicate or inconsistent token numbers.
 
-This project is licensed under the MIT License.
+The system uses transactional database operations for critical updates.
+
+### Real-Time Synchronization
+
+Instead of relying on periodic polling, MongoDB Change Streams detect database changes and SSE pushes relevant updates to connected clients.
+
+### Persistent Token Numbers
+
+Once a token is assigned, its token number remains unchanged throughout its lifecycle.
+
+## Future Improvements
+
+* QR-code based token generation
+* Estimated waiting-time prediction
+* SMS/WhatsApp notifications
+* Multi-branch organization support
+* Analytics dashboard
+* Redis-based distributed real-time messaging
+* Role-based organization staff accounts
+
+## License
+
+This project was developed as an academic/full-stack software project.
