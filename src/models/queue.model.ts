@@ -32,9 +32,11 @@ const queueSchema = new Schema({
     avgServiceTimePerCustomer: {
         type: Number
     }
+}, { timestamps: true });
 
-}, { timestamps: true })
+// Index for fast organization queue queries
+queueSchema.index({ organizationId: 1 });
 
-const queueModel = mongoose.models.queue || mongoose.model("queue", queueSchema)
+const queueModel = mongoose.models.queue || mongoose.model("queue", queueSchema);
 
-export default queueModel
+export default queueModel;

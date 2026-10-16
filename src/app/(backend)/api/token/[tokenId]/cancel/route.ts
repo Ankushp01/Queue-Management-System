@@ -4,6 +4,7 @@ import queueModel from "@/models/queue.model";
 import { connectdb } from "@/lib/connectdb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/(backend)/api/auth/[...nextauth]/option";
+import { queueEvents } from "@/lib/queueEvents";
 
 export async function PATCH(
   req: NextRequest,
@@ -61,6 +62,14 @@ export async function PATCH(
 
   foundToken.status = "cancelled";
   await foundToken.save();
+
+  queueEvents.emitQueueUpdate(foundToken.queueId.toString(), {
+    type: "queue-update",
+    action: "cancel",
+    currentToken: foundQueue.currentTokenNumber,
+    status: foundQueue.status,
+    token: foundToken,
+  });
 
   return Response.json({
     success: true,

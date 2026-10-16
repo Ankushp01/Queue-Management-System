@@ -3,6 +3,7 @@ import queueModel from "@/models/queue.model";
 import { connectdb } from "@/lib/connectdb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/option";
+import { queueEvents } from "@/lib/queueEvents";
 
 export async function PATCH(
   req: NextRequest,
@@ -58,6 +59,13 @@ export async function PATCH(
 
   foundQueue.status = status;
   await foundQueue.save();
+
+  queueEvents.emitQueueUpdate(queueId, {
+    type: "queue-update",
+    action: "status",
+    currentToken: foundQueue.currentTokenNumber,
+    status: foundQueue.status,
+  });
 
   return Response.json({
     success: true,

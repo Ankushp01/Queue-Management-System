@@ -2,44 +2,101 @@ import mongoose from "mongoose";
 import tokenModel from "@/models/token.model";
 import queueModel from "@/models/queue.model";
 import { connectdb } from "@/lib/connectdb";
+import { queueEvents } from "@/lib/queueEvents";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/(backend)/api/auth/[...nextauth]/option";
 
-export async function POST(req: Request, {
-    params,
-}: {
-    params: Promise<{
-        queueId: string;
-    }>;
-}) {
-    await connectdb()
-    const { queueId } = await params
+async function handleSkip(
+    req: Request,
+    {
+        params,
+    }: {
+        params: Promise<{
+            queueId: string;
+        }>;
+    }
+) {
+    await connectdb();
+    const { queueId } = await params;
 
-    const foundQueue = await queueModel.findById(queueId)
+    if (!mongoose.Types.ObjectId.isValid(queueId)) {
+        return Response.json(
+            {
+                success: false,
+                message: "Invalid queue id",
+            },
+            { status: 400 }
+        );
+    }
+
+    const foundQueue = await queueModel.findById(queueId);
 
     if (!foundQueue) {
-        return Response.json({
-            success: false,
-            message: "Queue not found with given queueId"
-        })
+        return Response.json(
+            {
+                success: false,
+                message: "Queue not found with given queueId",
+            },
+            { status: 404 }
+        );
     }
 
-    const calledToken = await tokenModel.findOne({
-        queueId,
-        status: "called"
-    })
+    const session = await getServerSession(authOptions);
+    if (
+        session?.user?.organizationId &&
+        foundQueue.organizationId &&
+        session.user.organizationId.toString() !== foundQueue.organizationId.toString()
+    ) {
+        return Response.json(
+            {
+                success: false,
+                message: "This queue does not belong to your organization",
+            },
+            { status: 403 }
+        );
+    }
+
+    // Atomic update: only transition token from "called" to "skipped"
+    const calledToken = await tokenModel.findOneAndUpdate(
+        {
+            queueId: foundQueue._id,
+            status: "called",
+        },
+        {
+            $set: { status: "skipped" },
+        },
+        {
+            new: true,
+        }
+    );
 
     if (!calledToken) {
-        return Response.json({
-            success: false,
-            message: "No token found with given queueId"
-        })
+        return Response.json(
+            {
+                success: false,
+                message: "No called token found with given queueId",
+            },
+            { status: 200 }
+        );
     }
 
-    calledToken.status = "skipped"
-    await calledToken.save()
+    // Broadcast skip event to SSE clients
+    queueEvents.emitQueueUpdate(queueId, {
+        type: "queue-update",
+        action: "skip",
+        currentToken: foundQueue.currentTokenNumber,
+        status: foundQueue.status,
+        token: calledToken,
+    });
 
-    return Response.json({
-        success: true,
-        data: calledToken,
-        message: "Called token is served successfully"
-    })
+    return Response.json(
+        {
+            success: true,
+            data: calledToken,
+            message: "Called token is skipped successfully",
+        },
+        { status: 200 }
+    );
 }
+
+export { handleSkip as POST, handleSkip as PATCH };
