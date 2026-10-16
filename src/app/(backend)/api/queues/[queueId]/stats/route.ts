@@ -55,7 +55,7 @@ export async function GET(req: Request, {
         }
     ])
 
-    const stats:any = {
+    const stats: Record<string, number> = {
         waiting: 0,
         called: 0,
         served: 0,

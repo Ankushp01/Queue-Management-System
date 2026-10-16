@@ -56,7 +56,7 @@ async function handleSkip(
         );
     }
 
-    // Atomic update: only transition token from "called" to "skipped"
+    // Atomic update: transition called token to "skipped" with deterministic order
     const calledToken = await tokenModel.findOneAndUpdate(
         {
             queueId: foundQueue._id,
@@ -66,6 +66,7 @@ async function handleSkip(
             $set: { status: "skipped" },
         },
         {
+            sort: { tokenNumber: 1 },
             new: true,
         }
     );
@@ -80,13 +81,21 @@ async function handleSkip(
         );
     }
 
-    // Broadcast skip event to SSE clients
+    // Clear active token on queue once skipped
+    foundQueue.currentTokenNumber = null;
+    await foundQueue.save();
+
+    // Broadcast sanitized skip event to SSE clients (PII excluded)
     queueEvents.emitQueueUpdate(queueId, {
         type: "queue-update",
         action: "skip",
-        currentToken: foundQueue.currentTokenNumber,
+        currentToken: null,
         status: foundQueue.status,
-        token: calledToken,
+        token: {
+            _id: calledToken._id.toString(),
+            tokenNumber: calledToken.tokenNumber,
+            status: calledToken.status,
+        },
     });
 
     return Response.json(

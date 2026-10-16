@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 // import organizationModel from "@/models/organization.model";
 import queueModel from "@/models/queue.model";
 import { getServerSession } from "next-auth";

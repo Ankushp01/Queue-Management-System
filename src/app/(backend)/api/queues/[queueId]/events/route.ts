@@ -50,32 +50,69 @@ export async function GET(
     const encoder = new TextEncoder();
 
     const stream = new ReadableStream({
-        start(controller) {
+        async start(controller) {
             console.log(`[SSE] Client connected to queue: ${queueId}`);
 
-            // 1. Immediately send authoritative current queue state upon connection/reconnection
-            const initialPayload: QueueEventPayload = {
-                type: "connected",
-                action: "initial",
-                currentToken: foundQueue.currentTokenNumber,
-                status: foundQueue.status,
-            };
-            controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(initialPayload)}\n\n`)
-            );
+            // SYNCHRONIZATION GUARANTEE (Finding F-03 fix):
+            // 1. Subscribe FIRST so no concurrent events emitted during connection setup are dropped.
+            // 2. Buffer any incoming events while reading the authoritative database snapshot.
+            // 3. Emit the snapshot, then drain the buffer in exact arrival order.
+            const inFlightBuffer: QueueEventPayload[] = [];
+            let snapshotDelivered = false;
 
-            // 2. Subscribe to shared in-process event bus for this specific queue
             unsubscribe = queueEvents.subscribe(queueId, (payload) => {
-                try {
-                    controller.enqueue(
-                        encoder.encode(`data: ${JSON.stringify(payload)}\n\n`)
-                    );
-                } catch {
-                    // Controller already closed
+                if (!snapshotDelivered) {
+                    inFlightBuffer.push(payload);
+                } else {
+                    try {
+                        controller.enqueue(
+                            encoder.encode(`data: ${JSON.stringify(payload)}\n\n`)
+                        );
+                    } catch {
+                        // Controller closed
+                    }
                 }
             });
 
-            // 3. Keep-alive heartbeat every 15 seconds to prevent reverse proxy timeouts
+            try {
+                // Fetch fresh authoritative state after subscription is in place
+                const currentDoc = await queueModel.findById(queueId).lean();
+                if (!currentDoc) {
+                    controller.close();
+                    return;
+                }
+
+                // Send authoritative current queue state
+                const initialPayload: QueueEventPayload = {
+                    type: "connected",
+                    action: "initial",
+                    currentToken: currentDoc.currentTokenNumber,
+                    status: currentDoc.status,
+                    timestamp: new Date().toISOString(),
+                };
+                controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify(initialPayload)}\n\n`)
+                );
+                snapshotDelivered = true;
+
+                // Drain any events that arrived during the snapshot read
+                for (const bufferedPayload of inFlightBuffer) {
+                    try {
+                        controller.enqueue(
+                            encoder.encode(`data: ${JSON.stringify(bufferedPayload)}\n\n`)
+                        );
+                    } catch {
+                        break;
+                    }
+                }
+                inFlightBuffer.length = 0;
+            } catch (err: unknown) {
+                console.error("[SSE] Failed to load initial snapshot:", err);
+                controller.error(err);
+                return;
+            }
+
+            // Keep-alive heartbeat every 15 seconds to prevent reverse proxy timeouts
             heartbeat = setInterval(() => {
                 try {
                     controller.enqueue(encoder.encode(`: heartbeat\n\n`));

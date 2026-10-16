@@ -145,13 +145,17 @@ export async function POST(
             status: "waiting",
         });
 
-        // Broadcast join update to real-time subscribers
+        // Broadcast sanitized join update to real-time subscribers (PII excluded)
         queueEvents.emitQueueUpdate(queueId, {
             type: "queue-update",
             action: "join",
             currentToken: updatedQueue.currentTokenNumber,
             status: updatedQueue.status,
-            token,
+            token: {
+                _id: token._id.toString(),
+                tokenNumber: token.tokenNumber,
+                status: token.status,
+            },
         });
 
         return Response.json(
@@ -164,13 +168,16 @@ export async function POST(
                 status: 201,
             }
         );
-    } catch (createError: any) {
-        // Compensate the allocated counter if token creation fails
-        await queueModel.findByIdAndUpdate(queueId, {
-            $inc: { nextTokenNumber: -1 },
-        });
+    } catch (createError: unknown) {
+        // MONOTONIC SEQUENCE GUARANTEE (Finding F-01 fix):
+        // Do NOT decrement nextTokenNumber on failure.
+        // In ticketing systems, token sequences are strictly monotonic.
+        // Decrementing here creates a race condition with concurrent requests
+        // and causes duplicate-key collision cascades on { queueId, tokenNumber }.
+        // Gaps in ticketing sequences are safe and expected when an insert fails.
+        const errorRecord = createError as { code?: number; message?: string };
 
-        if (createError.code === 11000) {
+        if (errorRecord?.code === 11000) {
             return Response.json(
                 {
                     success: false,
@@ -183,7 +190,7 @@ export async function POST(
         return Response.json(
             {
                 success: false,
-                message: createError.message || "Failed to create token",
+                message: errorRecord?.message || "Failed to create token",
             },
             { status: 500 }
         );

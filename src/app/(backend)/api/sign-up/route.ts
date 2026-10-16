@@ -20,7 +20,7 @@ export async function POST(req:Request) {
 
         const hashedpassword = await bcrypt.hash(password, 6)
 
-        const organization = await organizationModel.create({
+        await organizationModel.create({
             name,
             description,
             address,

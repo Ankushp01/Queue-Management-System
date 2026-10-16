@@ -51,7 +51,7 @@ async function handleServe(
         );
     }
 
-    // Atomic update: only transition token from "called" to "served"
+    // Atomic update: transition called token to "served" with deterministic order
     const calledToken = await tokenModel.findOneAndUpdate(
         {
             queueId: foundQueue._id,
@@ -61,6 +61,7 @@ async function handleServe(
             $set: { status: "served" },
         },
         {
+            sort: { tokenNumber: 1 },
             new: true,
         }
     );
@@ -75,13 +76,21 @@ async function handleServe(
         );
     }
 
-    // Broadcast serve event to SSE clients
+    // Clear active token on queue once served
+    foundQueue.currentTokenNumber = null;
+    await foundQueue.save();
+
+    // Broadcast sanitized serve event to SSE clients (PII excluded)
     queueEvents.emitQueueUpdate(queueId, {
         type: "queue-update",
         action: "serve",
-        currentToken: foundQueue.currentTokenNumber,
+        currentToken: null,
         status: foundQueue.status,
-        token: calledToken,
+        token: {
+            _id: calledToken._id.toString(),
+            tokenNumber: calledToken.tokenNumber,
+            status: calledToken.status,
+        },
     });
 
     return Response.json(

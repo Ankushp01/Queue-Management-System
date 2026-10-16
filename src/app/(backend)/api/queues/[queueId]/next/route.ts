@@ -68,6 +68,24 @@ export async function POST(
         );
     }
 
+    // Strict state transition check (Finding F-05):
+    // Prevent calling the next token if a token is currently being called.
+    // The active token must first be served or skipped to prevent orphan called tokens.
+    const activeCalledToken = await tokenModel.findOne({
+        queueId: foundQueue._id,
+        status: "called",
+    });
+
+    if (activeCalledToken) {
+        return Response.json(
+            {
+                success: false,
+                message: `Token #${activeCalledToken.tokenNumber} is currently called. Please serve or skip it before calling the next token.`,
+            },
+            { status: 409 }
+        );
+    }
+
     // ATOMIC CONCURRENCY-SAFE OPERATION:
     // Uses findOneAndUpdate with sort to atomically select the earliest waiting token
     // and transition its status from "waiting" to "called".
@@ -101,13 +119,17 @@ export async function POST(
     foundQueue.currentTokenNumber = nextToken.tokenNumber;
     await foundQueue.save();
 
-    // Broadcast update to real-time subscribers (SSE)
+    // Broadcast sanitized update to real-time subscribers (SSE) - PII excluded
     queueEvents.emitQueueUpdate(queueId, {
         type: "queue-update",
         action: "next",
         currentToken: nextToken.tokenNumber,
         status: foundQueue.status,
-        token: nextToken,
+        token: {
+            _id: nextToken._id.toString(),
+            tokenNumber: nextToken.tokenNumber,
+            status: nextToken.status,
+        },
     });
 
     return Response.json(

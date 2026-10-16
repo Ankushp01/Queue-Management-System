@@ -44,7 +44,7 @@ export async function GET(
     });
   }
 
-  const query: any = {
+  const query: Record<string, unknown> = {
     queueId,
   };
 

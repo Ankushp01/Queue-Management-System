@@ -13,7 +13,7 @@ export const queueService = {
         return res
     },
 
-    createQueue(data: any) {
+    createQueue(data: Record<string, unknown>) {
         return api.post("/queues", data);
     },
 

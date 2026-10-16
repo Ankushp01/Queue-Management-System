@@ -63,12 +63,17 @@ export async function PATCH(
   foundToken.status = "cancelled";
   await foundToken.save();
 
+  // Broadcast sanitized cancel event to SSE clients (PII excluded)
   queueEvents.emitQueueUpdate(foundToken.queueId.toString(), {
     type: "queue-update",
     action: "cancel",
     currentToken: foundQueue.currentTokenNumber,
     status: foundQueue.status,
-    token: foundToken,
+    token: {
+      _id: foundToken._id.toString(),
+      tokenNumber: foundToken.tokenNumber,
+      status: foundToken.status,
+    },
   });
 
   return Response.json({
